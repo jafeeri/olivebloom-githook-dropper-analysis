@@ -6,13 +6,14 @@
 ![Class](https://img.shields.io/badge/Class-Downloader%20%2F%20Dropper-red)
 ![Vector](https://img.shields.io/badge/Vector-git%20post--checkout%20hook-orange)
 ![Delivery](https://img.shields.io/badge/Delivery-Fake%20freelance%20client-yellow)
-![Status](https://img.shields.io/badge/Status-Phases%201--4%20complete%20%7C%20dynamic%20pending-informational)
+![Status](https://img.shields.io/badge/Status-Phases%201--5%20complete-success)
 
-> An analysis of a malware lure that was sent **to me**. A "client" on a freelancing platform
-> offered a well-paid Flutter contract, then sent a zipped "monorepo" and asked three times that I
-> *check out the `plan` branch*. That one command would have run a hidden git hook that downloads
-> and executes a remote payload. This repository documents the lure, the dropper, and the evidence
-> that my machine was never compromised.
+> Analysis of a targeted malware lure delivered through a freelancing platform. A purported client
+> offered a well-paid Flutter contract, sent a zipped "monorepo", and asked three times that the
+> `plan` branch be checked out. That single command runs a hidden git hook which downloads and
+> executes a remote payload. This repository documents the social-engineering delivery, the dropper,
+> the supporting infrastructure, the evidence that the host was never compromised, and a controlled
+> reproduction of the full execution chain in an isolated lab.
 
 **Analyst:** Ali Mehdi Jafeeri · **Date:** November 2026
 
@@ -32,9 +33,10 @@
 > not fetch it from a network you care about.
 
 > [!NOTE]
-> **Work in progress.** Phases 1–4 (delivery, static triage, infrastructure intelligence, host
-> assessment) are complete. Phase 5 (stage-2 retrieval and controlled detonation) is scheduled in
-> the isolated lab and will be added to this repository with its evidence.
+> **Scope.** Phases 1–5 are complete: delivery, static triage, infrastructure intelligence, host
+> assessment, and a controlled detonation of the real hook in an isolated lab. The attacker's own
+> stage-2 payload was deliberately **not** retrieved from live infrastructure; its capability is
+> characterised from the hook and public reporting (§5.5).
 >
 > Profile photos in the conversation screenshots are pixelated: the account appears to be a
 > hijacked genuine developer profile, so the person pictured is treated as a likely victim.
@@ -56,7 +58,7 @@
 - [Indicators of Compromise](#indicators-of-compromise)
 - [YARA Detection Rules](#yara-detection-rules)
 - [Defensive Recommendations](#defensive-recommendations)
-- [What I Learned](#what-i-learned)
+- [Analytical Takeaways](#analytical-takeaways)
 - [References & Prior Work](#references--prior-work)
 - [Repository Contents](#repository-contents)
 
@@ -76,7 +78,7 @@
 | **Hook SHA-256** | `cf74c18d923250226a47dcef01a35e897f5a1e67724e2535fd6bc0f98ff89dbd` |
 | **Victim impact** | None. The archive was never extracted and the host was proven clean |
 | **Account status** | Project and profile removed by the platform (checked 2026-11-07) |
-| **Status** | Delivery, static triage, infrastructure intelligence and host assessment complete · dynamic analysis pending |
+| **Status** | Complete: delivery, static triage, infrastructure intelligence, host assessment, and controlled detonation · attacker's stage-2 characterised, not retrieved |
 
 ---
 
@@ -112,16 +114,16 @@ the lure was built so that switching branch is the one thing the victim *had* to
 ## Attack Flow
 
 ```mermaid
-flowchart LR
-    A["Fake client DM<br/>$4–5k/month offer"] --> B["olivebloom.zip<br/>repo + hidden .git/"]
-    B --> C["Victim runs<br/>git checkout plan"]
-    C --> D["git runs .git/hooks/post-checkout<br/>(sh.exe)"]
-    D -->|Windows| E["Git's curl.exe saves<br/>%TEMP%/wtech_boot_PID.ps1"]
-    E --> F["powershell -ExecutionPolicy Bypass -File"]
-    D -->|macOS / Linux| G["curl output piped<br/>into python3"]
-    E -.->|HTTPS| H[("C2 66.116.241[.]148")]
+flowchart TD
+    A["Fake client DM<br/>pay far above the listing"] --> B["olivebloom.zip<br/>git repo with a shipped .git folder"]
+    B --> C["Victim runs git checkout plan"]
+    C --> D["git runs .git/hooks/post-checkout via sh"]
+    D -->|Windows| E["Git curl saves stage-2 to TEMP<br/>wtech_boot_PID.ps1"]
+    E --> F["powershell -ExecutionPolicy Bypass -File<br/>runs stage-2"]
+    D -->|macOS and Linux| G["curl piped to python3"]
+    E -.->|HTTPS| H["C2 server<br/>bare-IP HTTPS"]
     G -.->|HTTPS| H
-    D --> I["Hook deletes itself<br/>exit 0, checkout looks normal"]
+    F --> I["hook self-deletes, exit 0<br/>checkout looks normal"]
 ```
 
 The code is trivially readable. What makes this sample worth studying is the **process**: a
@@ -330,7 +332,7 @@ Observations:
 - **It runs synchronously.** `powershell … -File` is not backgrounded, so the checkout blocks until
   stage-2 returns. Stage-2 most likely spawns a detached process and exits quickly.
 - **It leaves one artefact.** The hook deletes itself but **not** `wtech_boot_<pid>.ps1`, which is the
-  best host indicator after the fact.
+  best host indicator after the fact (confirmed at detonation, §5.2 — `wtech_boot_331.ps1` remained).
 - **TLS on a bare IP.** `curl -s https://<IP>` without `-k` would fail on a self-signed certificate.
   **Resolved in Phase 3:** the server holds a publicly trusted **Let's Encrypt IP-address certificate**,
   so every platform path works without certificate errors.
@@ -484,21 +486,72 @@ For the hook to run, all of this must happen: `git.exe` → `sh.exe` → `curl.e
 
 ---
 
-## Phase 5 — Dynamic Analysis & Stage-2 (Pending)
+## Phase 5 — Dynamic Analysis (Controlled Detonation)
 
-| Step | Status |
+The attacker's second stage is hosted remotely and was **not publicly available** on any malware
+repository (VirusTotal relations, URLhaus and ThreatFox were all negative as of 2026-11-08), the C2's
+routing had already changed, and the payload is swappable per victim and per OS. Rather than contact
+live attacker infrastructure to capture a single, transient copy, the delivery and execution chain was
+reproduced in the isolated lab using a **benign marker payload** served from the analyst's own sinkhole.
+This exercises the real, unmodified hook end to end without ever contacting the attacker; the stage-2's
+capability is characterised separately (§5.5).
+
+### 5.1 Method
+
+- The C2 IP was routed to the REMnux sinkhole, which served a one-line benign PowerShell marker over
+  HTTPS using a certificate whose Subject Alternative Name is the C2 IP, trusted on the victim.
+- **Faithful-reproduction note.** Git for Windows' `curl` uses the Windows **schannel** TLS backend,
+  which enforces an online certificate-revocation check. On an isolated network that check cannot
+  complete (`CRYPT_E_NO_REVOCATION_CHECK 0x80092012`); it was disabled for the lab only
+  (`ssl-no-revoke`). On a real, internet-connected victim the check succeeds against Let's Encrypt and
+  the chain proceeds unaided — the reliance on Windows' own TLS stack and a publicly trusted IP
+  certificate is itself notable tradecraft.
+- Instrumentation: Process Monitor, Process Hacker, Regshot (before/after), and a full packet capture
+  on the sinkhole. A clean snapshot was taken before detonation and restored afterward.
+
+### 5.2 Result — the chain executed exactly as modelled
+
+`git checkout plan` presented as an ordinary, successful branch switch while silently executing the
+full chain:
+
+![Detonation](images/F07-detonation-chain.png)
+*`git checkout plan` → "Switched to branch 'plan'"; the marker file written by the stage-2 step; the
+dropped `wtech_boot_331.ps1` (63 B) left in `%TEMP%`; and `post-checkout` gone — self-deleted.*
+
+| Modelled behaviour (Phases 1–2) | Observed at detonation |
 |---|---|
-| Byte-exact hook hash | ✅ `cf74c18d…89dbd`, confirmed against an independent VirusTotal upload (§3.3) |
-| Passive threat intelligence on the C2 address | ✅ Phase 3 |
-| Sample transferred into the isolated Windows 10 VM | ✅ Done |
-| Sample preserved in an AES-256 encrypted evidence container (password `infected`); inner archive verified at the original 1,330,753 bytes | ✅ Done (2026-11-07) |
-| Submission to MalwareBazaar (TLP:CLEAR) for the research community | ⏳ Prepared; waiting for the new account to be enabled for submissions |
-| SHA-256 / MD5 / ssdeep of the archive (inside the lab VM) | ⏳ |
-| `zipinfo -v` timestamp and extra-field review (tests the UTC+5 inference) | ⏳ |
-| Stage-2 retrieval: throwaway egress only, saved to disk, never piped | ⏳ |
-| Controlled detonation: `git checkout plan` under Procmon, Sysmon, Wireshark and script-block logging, with INetSim serving the retrieved stage-2 | ⏳ |
-| Stage-2 analysis: deobfuscation, C2/config extraction, persistence, data targeted | ⏳ |
-| Formatted report (`report/`) | ⏳ |
+| Hook fires on `git checkout` | `git checkout plan` triggered it; checkout reported success |
+| Process chain `git → sh → curl → powershell` | Observed in Process Monitor / Process Hacker |
+| `curl` GET to the C2 over HTTPS | Sinkhole logged `GET /wtech/auralyx → 200`; captured in the pcap |
+| Download to `%TEMP%\wtech_boot_<pid>.ps1` | `wtech_boot_331.ps1` (63 B) written to `%TEMP%` |
+| `powershell -File` executes the payload | Marker file written by the payload step |
+| Hook self-deletes; checkout exits 0 | `post-checkout` no longer present; no error surfaced |
+| Dropped `.ps1` survives self-deletion | `wtech_boot_331.ps1` remained — the key post-incident host artefact |
+
+### 5.3 Host changes — the dropper installs no persistence of its own
+
+A before/after Regshot comparison (158 changes) contained **no persistence**: no `Run`/`RunOnce`, no
+new service, no scheduled task, and no Winlogon/IFEO/AppInit or startup entry. The only
+detonation-attributable registry changes were execution artefacts — BAM and UserAssist records for
+`powershell.exe` — which independently corroborate the execution step. Persistence, where it exists, is
+the **stage-2's** responsibility; this is consistent with the 52-byte `.bash_profile` C2 artefact
+observed for the macOS/Linux path (§3.3).
+
+### 5.4 Detection validation
+
+The detection logic proposed from static analysis (§2.7 of the working notes) was confirmed against
+live telemetry: the `git → sh → curl → powershell -File %TEMP%\*.ps1` process lineage; creation of
+`%TEMP%\wtech_boot_*.ps1` immediately followed by a PowerShell `-File` execution from `%TEMP%`; and
+HTTPS to a bare IP from a `curl` process whose parent is Git's `sh`.
+
+### 5.5 Stage-2 capability (characterised, not retrieved)
+
+The attacker's own second stage was intentionally not pulled from live infrastructure. Its capability
+is inferred from the hook's design and from public reporting on this lure family: a staged downloader
+leading to an infostealer/RAT that targets developer assets — SSH keys, `.env` files, cloud
+credentials, browser sessions and cryptocurrency wallets — with the macOS/Linux variant persisting via
+shell-profile modification. This is an inference and is labelled as such; a full dissection of the
+attacker's payload is out of scope for this report.
 
 ---
 
@@ -510,17 +563,18 @@ For the hook to run, all of this must happen: `git.exe` → `sh.exe` → `curl.e
 | Resource Development | T1583.003 Acquire Infrastructure: Virtual Private Server | Oracle Cloud instance as C2 |
 | Resource Development | T1588.004 Obtain Capabilities: Digital Certificates | Scripted Let's Encrypt IP certificates |
 | Initial Access | T1566.003 Phishing: Spearphishing via Service | Freelancing-platform DM + attachment |
-| Execution | T1204.002 User Execution: Malicious File | Victim must run `git checkout` |
-| Execution | T1059.004 Unix Shell | The hook itself |
-| Execution | T1059.001 PowerShell | Windows stage-2 via `-ExecutionPolicy Bypass -File` |
-| Execution | T1059.006 Python | macOS/Linux stage-2 via `curl \| python3` |
-| Command and Control | T1105 Ingress Tool Transfer | `curl` download of stage-2 |
+| Execution | T1204.002 User Execution: Malicious File | Victim runs `git checkout`; **observed** to fire the hook (§5.2) |
+| Execution | T1059.004 Unix Shell | The hook itself; **observed** running via Git's `sh` |
+| Execution | T1059.001 PowerShell | Windows stage-2 via `-ExecutionPolicy Bypass -File`; **observed** at detonation |
+| Execution | T1059.006 Python | macOS/Linux stage-2 via `curl \| python3` (hook branch) |
+| Command and Control | T1105 Ingress Tool Transfer | `curl` download of stage-2; **observed** (sinkhole 200 + pcap) |
 | Command and Control | T1071.001 Web Protocols | HTTPS to a bare IP |
-| Defense Evasion | T1070.004 Indicator Removal: File Deletion | Hook deletes itself |
+| Defense Evasion | T1070.004 Indicator Removal: File Deletion | Hook deletes itself; **observed** — `post-checkout` gone after checkout |
 | Defense Evasion | T1036 Masquerading *(loose fit)* | Payload hidden as a normal git hook in a "work" repo |
 | Persistence | T1546.004 Unix Shell Configuration Modification *(suspected)* | 52-byte `.bash_profile` referencing the C2 (§3.3) |
 
-Stage-2 techniques will be added after Phase 5.
+Stage-2 techniques are characterised from the hook and public reporting (§5.5); they are not confirmed
+by direct analysis of the attacker's own payload.
 
 ---
 
@@ -539,6 +593,7 @@ Machine-readable: [`iocs/iocs.csv`](iocs/iocs.csv).
 | Persistence *(suspected)* | `.bash_profile` (52 B) `3f65f68db1d3d08ea7bb2d3b5107c741d0ae83cc65966fa796b18b7040f0eb27` |
 | Related, June 2026 | `microsoft_service.vbs` (160 B) `8e8a0586cfdcfec6a4bc34e819b035de6a596a116ef24bbe26a9bc4bb403622c` |
 | Process chain | `git.exe` → `sh.exe` → `curl.exe` → `powershell.exe -NoProfile -ExecutionPolicy Bypass -File %TEMP%\*.ps1` |
+| Execution artefacts | Post-run BAM + UserAssist records for `powershell.exe` (observed at detonation, §5.3) |
 | Lure archive | `olivebloom.zip`, 1,330,753 bytes (unique per victim; detect on the hook hash instead) |
 | Git author | `Challenge Bot <challenge@local>` |
 | Git commits | `38f51abb120e398f1ae1552073d5d3d3a658dcef` (main), `ba8ea7f135c6ef4c8a659c3ab4cc43ad5e39b00b` (plan) |
@@ -610,26 +665,31 @@ benign hook and an archive containing only `.sample` files.
 
 ---
 
-## What I Learned
+## Analytical Takeaways
 
-**1. The weapon was the conversation.** The hook is 50 lines of readable shell. Everything that made
-it dangerous was upstream: a pay offer that switched off scepticism, a monorepo story that explained
-the zip, and three polite reminders to run one command. The technical analysis took minutes;
-understanding the *funnel* is the real finding.
+**The delivery chain is where this threat is both most dangerous and most defensible.** The hook is
+~50 lines of unobfuscated shell; its effectiveness comes entirely from the surrounding operation — a
+per-victim generated repository, a conversation engineered to make one `git` command appear routine,
+and a `post-checkout` trigger the victim invokes themselves. Controls on that chain (inspecting shipped
+`.git/hooks`, neutralising repo-local hooks, alerting on the process lineage) yield more than
+signature-based detection of the trivial downloader.
 
-**2. Hash reputation is the wrong first check for per-victim lures.** My first instinct was VirusTotal.
-For an archive generated 29 seconds before delivery, a hash lookup almost certainly returns "not
-found", and a 1.9 KB script that only calls `curl` scores low with many engines. Uploading also shares
-the sample with every VirusTotal subscriber. **Reading `.git/hooks/` as text was the check that worked.**
-The follow-up taught the other half: the *archive* is unique, but the *hook inside it* is not. Hashing
-the right layer turned a "not found" into a match with another victim and three sibling lures.
+**Hash reputation is the wrong primary control for per-victim lures.** The archive is regenerated
+seconds before delivery, so its hash is effectively unique and reputation lookups return nothing, and
+the thin downloader scores against almost no engines. The durable indicator sits one layer down: the
+**hook is a fixed template with a stable hash**, which pivoted a dead-end archive lookup into a confirmed
+link to a separate victim and three sibling lures on the same infrastructure.
 
-**3. "Not compromised" needs evidence, not relief.** It was tempting to stop at "I never extracted it".
-Instead, the assessment walked the only execution path link by link, and Prefetch closed the question:
-the binaries the hook needs never ran. A negative result is only as strong as the path it rules out.
+**A "not compromised" determination must rest on a ruled-out execution path, not on intent.** The host
+assessment did not stop at "the archive was never extracted"; it enumerated every link the hook requires
+(`git → sh → curl → powershell`) and demonstrated each was absent, with Prefetch confirming the
+required binaries never executed. The controlled detonation then verified this is the complete and only
+execution path.
 
-I also kept attacker's-design-rationale notes throughout: *why* a zip, *why* `post-checkout`, *why*
-Git's own curl. Reconstructing those choices is what turned "a suspicious file" into an understood technique.
+**Living off trusted tooling shifts the detection burden to behaviour.** The operation relies on
+binaries already present and trusted on any developer workstation — Git's signed `curl`, the platform
+`powershell`/`python3` — and on Windows' own TLS stack with a publicly trusted certificate. Static
+trust decisions do not catch it; process-lineage and egress behaviour do.
 
 ---
 
@@ -640,10 +700,12 @@ Palo Alto Networks Unit 42's reporting on the "Contagious Interview" campaign. A
 code execution is a known technique. **No attribution is claimed here**; the overlap is the general
 pattern, not shared indicators.
 
-What this repository documents is my **own analysis of a lure sent to me**: the conversation, the
-in-memory static triage, the reconstruction of the per-victim build, and the host assessment that
-proves non-execution. Where a conclusion is an inference (the UTC+5 build host, the per-victim hash,
-the account possibly being hijacked) it is marked as such.
+This repository documents a first-hand analysis of a lure delivered to the analyst: the
+social-engineering conversation, the in-memory static triage, the reconstruction of the per-victim
+build, the passive infrastructure intelligence, the host assessment that proves non-execution, and the
+controlled reproduction of the execution chain. Where a conclusion is an inference (the UTC+5 build
+host, the per-victim archive hash, the account likely being hijacked, the stage-2 capability) it is
+labelled as such.
 
 **Git hooks:** [git-scm.com/docs/githooks](https://git-scm.com/docs/githooks) · **Framework:** [MITRE ATT&CK](https://attack.mitre.org/)
 
@@ -654,7 +716,7 @@ the account possibly being hijacked) it is marked as such.
 ```
 .
 ├── README.md                       ← this analysis
-├── images/                         ← 6 conversation screenshots (profile photo pixelated)
+├── images/                         ← 7 screenshots: 6 conversation (profile photo pixelated) + 1 detonation
 ├── evidence/
 │   ├── post-checkout.defanged.txt  ← the dropper hook, defanged text
 │   └── decoy/                      ← decoy PRD + pricing/billing docs from the plan branch
@@ -665,7 +727,7 @@ the account possibly being hijacked) it is marked as such.
 ├── tools/
 │   ├── zip_git_objects.py          ← decode a zipped repo's git objects in memory
 │   └── host-hunt/                  ← read-only host compromise assessment (PowerShell)
-├── report/                         ← formatted report (after Phase 5)
+├── report/                         ← formatted report (in progress)
 └── LICENSE
 ```
 
