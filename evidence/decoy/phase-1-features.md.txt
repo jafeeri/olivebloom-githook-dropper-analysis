@@ -1,0 +1,106 @@
+### DECOY DOCUMENT — plan branch: docs/phase-1-features.md (git blob 64cee223c6002763673e8ee87a540ce92637ef0c, 6188 bytes)
+### Transcribed from in-memory decode on 2026-11-03. Em-dashes in headings rendered as "—".
+--------------------------------------------------------------------------------
+# OliveBloom — Phase 1: MVP Feature List
+
+## 1. Product Name
+
+**OliveBloom** is the working product name for the Argonz mobile app: an AI chat application for thoughtful conversations, available on iOS and Android, with first-class light and dark modes.
+
+## 2. Vision
+
+OliveBloom gives people a calm, focused place to think out loud with an AI companion. Rather than optimizing for volume of messages or novelty, OliveBloom optimizes for the quality of a conversation: clear history, comfortable reading in any lighting, and a chat experience that feels intentional from the first screen.
+
+In Phase 1, OliveBloom ships a complete, dependable chat loop — sign in, start a conversation, keep your history, and personalize the look of the app — plus the administrative basics needed to operate it.
+
+## 3. Goals (Phase 1)
+
+- G1: A new user can create an account and send a first message in under two minutes.
+- G2: Conversations persist reliably across sessions and devices for a signed-in user.
+- G3: Light and dark modes are fully supported, with a system-follow default.
+- G4: Operators can manage users and monitor core usage without engineering involvement.
+- G5: The billing foundation (credits and consumable in-app purchases) is defined and ready for Phase 2 rollout, per the billing documentation.
+
+## 4. Non-Goals (Phase 1)
+
+- Multi-agent or tool-using AI behaviors beyond a single conversational model.
+- Social features (sharing conversations, public profiles, community feeds).
+- Web or desktop clients.
+- Subscription plans, team accounts, or enterprise administration.
+- Rich media generation (images, audio) inside chat.
+
+## 5. Product Principles
+
+1. **Conversation first.** Every screen either starts, continues, or organizes a conversation.
+2. **Calm by default.** Motion, color, and typography stay restrained; the AI's voice is helpful, not performative.
+3. **Respect the reader's light.** Light and dark modes are equal citizens, not an afterthought.
+4. **Nothing is lost.** History is durable, and destructive actions require confirmation.
+5. **Small surface, solid edges.** We prefer fewer features that work everywhere over many that work sometimes.
+
+## 6. Feature Tables
+
+Priority key: **P0** = required to launch; **P1** = should ship in Phase 1 if schedule allows.
+
+### 6.1 Authentication & Account
+
+| # | Feature | Description | Priority |
+|---|---------|-------------|----------|
+| A1 | Email + password sign-up | Account creation with email verification | P0 |
+| A2 | Sign-in / sign-out | Session-based sign-in; sign-out from settings | P0 |
+| A3 | Password reset | Email-based reset flow | P0 |
+| A4 | Apple / Google sign-in | Native SSO on both platforms | P1 |
+| A5 | Profile basics | Display name and avatar (initials fallback) | P0 |
+| A6 | Account deletion | In-app deletion request with confirmation | P0 |
+| A7 | Session management | Token refresh; sign-out of all devices | P1 |
+
+### 6.2 Core Chat Experience
+
+| # | Feature | Description | Priority |
+|---|---------|-------------|----------|
+| C1 | New conversation | Start a chat from the home screen; empty-state prompts offered | P0 |
+| C2 | Send and receive messages | Text input with send; streaming or progressive AI replies | P0 |
+| C3 | Message states | Sending, sent, failed with retry; copy message text | P0 |
+| C4 | Conversation history | List of past conversations, sorted by recency, with titles | P0 |
+| C5 | Resume and rename | Reopen a conversation; auto-title with manual rename | P0 |
+| C6 | Delete conversation | Swipe-to-delete with confirmation | P0 |
+| C7 | Typing / thinking indicator | Visible feedback while the AI responds | P0 |
+| C8 | Error handling | Offline banner, timeout messaging, graceful retry | P0 |
+| C9 | Message actions | Copy, regenerate last reply | P1 |
+| C10 | Search conversations | Local search over titles and message text | P1 |
+| C11 | Long-conversation handling | Clear indicator and context windowing for lengthy threads | P1 |
+
+### 6.3 Appearance & Settings
+
+| # | Feature | Description | Priority |
+|---|---------|-------------|----------|
+| S1 | Light / dark / system theme | Three-way toggle; system default on first launch | P0 |
+| S2 | Theme persistence | Choice remembered per account and device | P0 |
+| S3 | Settings hub | Account, appearance, notifications, about, legal | P0 |
+| S4 | Accessibility baseline | Dynamic type, screen-reader labels, contrast-safe palettes in both themes | P0 |
+| S5 | Notification preferences | Opt-in/out for product notifications (no chat push in Phase 1) | P1 |
+| S6 | Legal & about | Terms, privacy policy, version info | P0 |
+
+### 6.4 Admin Basics
+
+| # | Feature | Description | Priority |
+|---|---------|-------------|----------|
+| AD1 | Admin sign-in | Separate role-gated access to an internal console | P0 |
+| AD2 | User lookup | Search users by email or ID; view status | P0 |
+| AD3 | User moderation | Suspend / reinstate accounts with reason logging | P0 |
+| AD4 | Usage dashboard | Daily active users, messages sent, error rates | P1 |
+| AD5 | Conversation inspection | Read-only access for abuse review, audit-logged | P1 |
+| AD6 | Prompt/config toggles | Feature flags for prompts and model routing | P1 |
+
+## 7. Billing Note
+
+Monetization in OliveBloom is built on a credit system purchased through **RevenueCat-managed consumable in-app purchases** on iOS and Android. Credit packs, balances, spend rules, receipt validation, and refund handling are specified in the companion **Billing & Credits** documents and are out of scope for this MVP feature list. Phase 1 includes only the seams (account linkage and entitlement hooks) needed to adopt that system without rework.
+
+## 8. Dependencies & Risks
+
+- AI provider latency and cost directly affect conversation quality and the future credit model.
+- Theme consistency requires a shared design-token layer across both platforms.
+- Admin conversation inspection must ship with strict audit logging to preserve user trust.
+
+## 9. Launch Criteria
+
+All P0 items complete; sign-up-to-first-message flow verified on both platforms in both themes; admin moderation verified end to end; billing seams reviewed against the Billing & Credits docs.

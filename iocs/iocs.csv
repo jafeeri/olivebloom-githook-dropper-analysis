@@ -1,0 +1,28 @@
+type,indicator,context,confidence
+ipv4,66.116.241[.]148,Stage-2 payload host (HTTPS on bare IP),high
+url,hxxps://66.116.241[.]148/wtech/auralyx,Windows stage-2 (PowerShell script),high
+url,hxxps://66.116.241[.]148/dtech/auralyx,macOS/Linux stage-2 (piped to python3),high
+file_path,%TEMP%\wtech_boot_<pid>.ps1,Dropped stage-2 on Windows ($$ = shell PID); survives hook self-deletion,high
+file_path,<repo>/.git/hooks/post-checkout,Dropper hook (1928 bytes); deletes itself after first run,high
+filename,olivebloom.zip,Lure archive (1330753 bytes; unique per victim - use the hook hash instead),medium
+git_author,Challenge Bot <challenge@local>,Kit fingerprint on both commits and the reflog,high
+git_commit,38f51abb120e398f1ae1552073d5d3d3a658dcef,main - Initial commit,medium
+git_commit,ba8ea7f135c6ef4c8a659c3ab4cc43ad5e39b00b,plan - Add OliveBloom plan assets,medium
+git_blob,c1046930dbefca08e48337dd7a2fb31f12a488a7,design/OliveBloom_phase1.fig (decoy Figma file 1299668 bytes),high
+git_blob,64cee223c6002763673e8ee87a540ce92637ef0c,docs/phase-1-features.md (decoy PRD),high
+git_blob,58ec39df8f63afe1927b13851557f6d8dfa58fd2,docs/billing/revenuecat-credits.md (decoy),high
+git_blob,0ee750714970a0ea764ba85e458c0473a6bfc39f,docs/policies/pricing-and-credits.md (decoy),high
+string,Candidate need to checkout plan branch,Lure readme.md on main,high
+string,Trojan:Win32/Commando.A!ml,Author comment inside the hook (evasion note),high
+account,freelancer.com/u/timimalik,"Lure operator account (""Taimoor""); likely hijacked; removed by the platform",medium
+lure_name,Auralyx / OliveBloom / Argonz,Three project names used for one lure,medium
+behaviour,git.exe > sh.exe > curl.exe > powershell.exe -ExecutionPolicy Bypass -File %TEMP%\*.ps1,Process chain on Windows,high
+sha256,cf74c18d923250226a47dcef01a35e897f5a1e67724e2535fd6bc0f98ff89dbd,post-checkout dropper hook (1928 bytes); identical across victims,high
+sha256,34f0e33c4d0775d560c27852bf63ed9b89077a57a797ca56c812a7535eb34875,prismqiwave.zip - sibling lure archive (VirusTotal),high
+sha256,398442b9a622cd4aad2e2486c9d0decfeed667055c2588451d98ee60486a396e,nexanacraft.zip - sibling lure archive (VirusTotal),high
+sha256,c7bb51079b87e602673674e787ed22684ed7bd0fd21cb7d70e97f9c2ee60a1e4,mesarelay.zip - sibling lure archive (VirusTotal),high
+sha256,3f65f68db1d3d08ea7bb2d3b5107c741d0ae83cc65966fa796b18b7040f0eb27,.bash_profile (52 bytes) referencing the C2; suspected macOS/Linux persistence,medium
+sha256,8e8a0586cfdcfec6a4bc34e819b035de6a596a116ef24bbe26a9bc4bb403622c,microsoft_service.vbs (160 bytes) referencing the C2 in June 2026; possibly same operator,low
+asn,AS31898,Oracle Corporation (Oracle Cloud) announcing the C2 prefix on 2026-11-04,medium
+tls_sha1,4bc74b6d3b5b56e4501ec6d0ef1980d57c4fb153,Let's Encrypt YE2 IP certificate for the C2 (2026-10-30 to 2026-11-06; rotates ~160h),medium
+jarm,28d28d28d00028d00042d42d0000005a3e96c1dfa4bdb24b8b3c04cae18cc3,C2 TLS server fingerprint,low

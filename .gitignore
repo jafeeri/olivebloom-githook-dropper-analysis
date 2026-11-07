@@ -1,0 +1,22 @@
+# ---- SAFETY: never commit malware samples or extracted payload ----
+*.exe
+*.dll
+*.bin
+*.wnry
+*.mlz
+*.dmp
+*.raw
+samples/
+payload/
+extracted/
+*.zip
+*.7z
+*.rar
+!report/*.docx
+
+# OS / editor noise
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/

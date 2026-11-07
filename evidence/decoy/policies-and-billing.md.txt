@@ -1,0 +1,76 @@
+### DECOY DOCUMENTS — plan branch, transcribed from in-memory decode on 2026-11-03.
+### (1) docs/policies/pricing-and-credits.md — git blob 0ee750714970a0ea764ba85e458c0473a6bfc39f, 3809 bytes — FULL TEXT
+###     (curly quotes/dashes were shown as replacement chars in the decode; restored as ' and —)
+### (2) docs/billing/revenuecat-credits.md — git blob 58ec39df8f63afe1927b13851557f6d8dfa58fd2, 5751 bytes — FIRST ~1500 CHARS ONLY
+### Note: "generations", "Publish Generation", "playback" (backend readme) do not fit an "AI chat app" — template text reused across lures.
+================================================================================
+(1) pricing-and-credits.md
+--------------------------------------------------------------------------------
+# OliveBloom — Pricing & Credits Policy
+
+## 1. Purpose and Scope
+This policy defines how OliveBloom prices and meters usage, how credits are purchased and consumed, and how refunds are handled. It applies to all users of the OliveBloom app on supported platforms. Capitalized terms below have the meanings given in this section or elsewhere in the policy.
+
+## 2. Definitions
+- **OliveBloom**: the product and services offered under the OliveBloom name.
+- **Credits**: prepaid, consumable units purchased in-app and used to run generations in OliveBloom. Credits are not currency, do not accrue interest, and are non-transferable.
+- **Consumable In-App Purchase (IAP)**: a RevenueCat-managed, one-time purchase of a Credit package through the platform store. OliveBloom does not use web checkout, Stripe, or PayPal for Credit purchases.
+- **Personal Generation**: a generation used for the user's own private or non-commercial purposes.
+- **Publish Generation**: a generation intended for distribution, publication, or commercial use, as indicated by the user or by product features in OliveBloom.
+- **Credit Balance**: the number of Credits available in a user's OliveBloom account at any time.
+
+## 3. Purchasing Credits
+Credits are sold only as consumable IAPs through the platform store and are fulfilled via RevenueCat. Prices are displayed in the store before purchase and may vary by region, taxes, and store policies. A successful purchase increases the user's Credit Balance; a failed or reversed transaction does not.
+
+## 4. Credit Packages
+OliveBloom offers the following representative packages. Exact Credit amounts and prices are shown in-app and in the store listing and control at checkout.
+
+| Package | Credits | Intended Use |
+|---|---:|---|
+| Starter | 100 | Light personal use |
+| Creator | 500 | Regular personal use |
+| Studio | 1,200 | Mixed personal and publish use |
+| Pro | 3,000 | High-volume publish use |
+
+Package contents may be adjusted prospectively. Changes do not reduce Credits already purchased.
+
+## 5. Consumption: Personal vs. Publish Generations
+Credits are deducted when a generation is successfully initiated. Personal Generations consume the base rate. Publish Generations consume a higher rate because they include distribution-oriented processing and outputs. The applicable rate is shown before the user confirms a generation. Failed generations that do not produce output do not consume Credits; if Credits are deducted in error, they are returned to the Credit Balance.
+
+## 6. Credit Balance and Expiration
+Credits remain available until used, except where required by law or store rules. Credits have no cash value and cannot be exchanged for cash. Credits may not be combined across accounts or transferred to another person.
+
+## 7. Refunds
+Purchases are processed by the platform store and RevenueCat. Refund eligibility is governed by the store's policies. OliveBloom does not issue refunds directly and cannot override store decisions. Where a refund is granted, the corresponding Credits are removed from the Credit Balance; if Credits were already consumed, the account may show a negative balance until reconciled. Users should request refunds through the store's standard process. OliveBloom may, at its discretion, grant goodwill Credits for verified fulfillment issues.
+
+## 8. Disputes, Abuse, and Changes
+OliveBloom may suspend Credit use or adjust balances in cases of suspected fraud, chargeback abuse, or violation of the Terms of Service. OliveBloom may update this policy and package pricing prospectively. Material changes will be communicated in-app. Continued use after an update constitutes acceptance.
+
+## 9. Contact
+Questions about Credits or this policy should be directed to OliveBloom support through the in-app help channel.
+
+================================================================================
+(2) revenuecat-credits.md — PARTIAL (first ~1500 chars)
+--------------------------------------------------------------------------------
+# OliveBloom — RevenueCat Credits Billing Specification
+
+## 1. Overview
+
+OliveBloom uses a prepaid credit system to gate its premium features. Credits are sold exclusively through **consumable in-app purchases (IAP)** managed by **RevenueCat**. All digital goods in OliveBloom are purchased as credit packs; there is **no web checkout, subscription, or external payment processor** (no Stripe, no PayPal, no hosted checkout links).
+
+This document specifies how OliveBloom models, sells, consumes, and reconciles credits, and defines the boundaries (goals and non-goals) of the billing system.
+
+## 2. Credit Model
+
+- **Unit:** 1 OliveBloom Credit (abbreviated "OB-credit"). Integer only; fractional credits are not supported.
+- **Wallet:** Each user has a single credit balance stored server-side in the OliveBloom ledger. RevenueCat is the source of truth for *purchases*; the OliveBloom ledger is the source of truth for *spend*.
+- **Consumability:** Credit packs are consumable products. Once purchased and granted, the credit is consumed by app actions and cannot be restored or transferred.
+- **Expiry:** Credits do **not** expire in v1. (See Non-Goals.)
+- **Balance floor:** Balance cannot go below 0. Spend attempts that exceed the balance are rejected client- and server-side.
+
+## 3. Product Catalog
+
+Credit packs are defined in App Store Connect / Google Play Console and mirrored in RevenueCat as consumable products under a single Offering.
+
+| Product ID (example) | Display Name | Credits
+[... truncated in capture ...]
